@@ -50,6 +50,7 @@ int main(void)
 			char        buffer[BUFFER_SIZE];
 			int         receivedBytes;
 	
+			/* Utilisation de select pour éviter le timeout du serveur */
 			fd_set read_fds;
 			struct timeval timeout;
 			bool headers_complete = false;
