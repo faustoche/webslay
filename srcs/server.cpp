@@ -16,7 +16,7 @@ int main(void)
 
 	if (bind(socket_fd, (struct sockaddr *) &socket_address, sizeof(socket_address)) < 0)
 	{
-		cerr << "Error: Bind mode - " << errno << endl;
+		cerr << "Error: Bind: Address already used - " << errno << endl;
 		return (-1);
 	}
 
@@ -50,22 +50,48 @@ int main(void)
 			char        buffer[BUFFER_SIZE];
 			int         receivedBytes;
 	
-			while (request.find("\r\n\r\n") == string::npos)
+			fd_set read_fds;
+			struct timeval timeout;
+			bool headers_complete = false;
+
+			while (!headers_complete)
 			{
-				receivedBytes = recv(connected_socket_fd, buffer, sizeof(buffer) - 1, 0);
-				if (receivedBytes <= 0)
-				{
-					if (receivedBytes == 0) {
-						cout << "Client closed connection" << endl;
-					} else {
-						cerr << "Error: message not received - " << errno << endl;
-					}
+				FD_ZERO(&read_fds);
+				FD_SET(connected_socket_fd, &read_fds);
+				timeout.tv_sec = 5;
+				timeout.tv_usec = 0;
+				
+				int select_result = select(connected_socket_fd + 1, &read_fds, NULL, NULL, &timeout);
+				
+				if (select_result == 0) {
+					cout << "Timeout - pas de données reçues" << endl;
+					keep_alive = false;
+					break;
+				} else if (select_result < 0) {
+					cerr << "Erreur select: " << errno << endl;
 					keep_alive = false;
 					break;
 				}
-				buffer[receivedBytes] = '\0';
-				request.append(buffer);
-				fill(buffer, buffer + sizeof(buffer), '\0');
+				
+				if (FD_ISSET(connected_socket_fd, &read_fds)) {
+					receivedBytes = recv(connected_socket_fd, buffer, sizeof(buffer) - 1, MSG_DONTWAIT);
+					if (receivedBytes <= 0) {
+						if (receivedBytes == 0) {
+							cout << "Client closed connection" << endl;
+						} else {
+							cerr << "Error: message not received - " << errno << endl;
+						}
+						keep_alive = false;
+						break;
+					}
+					buffer[receivedBytes] = '\0';
+					request.append(buffer);
+					fill(buffer, buffer + sizeof(buffer), '\0');
+
+					if (request.find("\r\n\r\n") != string::npos) {
+						headers_complete = true;
+					}
+				}
 			}
 			
 			if (!keep_alive || request.empty()) {
