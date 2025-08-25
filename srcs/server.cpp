@@ -1,4 +1,6 @@
 #include "server.hpp"
+#include <sys/time.h>
+#include <netinet/tcp.h>
 
 int main(void)
 {
@@ -13,7 +15,19 @@ int main(void)
 		cerr << "Error: Socket creation - " << errno << endl;
 		return (-1);
 	}
+	/* Pour réutiliser le même port a la suite*/
+	int socket_option = 1;
 
+	// socket fd: le socket sur lequel on agit
+	// SOL SOCKET : indique qu;on agit sur une topion au niveau du socket
+	// SO REUSEADDR : option qu'on veut activer
+	// &opt " un pointeur vers la valeur de l'option - 1 pour l'activer"
+	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &socket_option, sizeof(socket_option)) < 0) {
+		cerr << "Error: socket option - Reusable address - " << errno << endl;
+		close(socket_fd);
+		return (-1);
+	}
+	
 	if (bind(socket_fd, (struct sockaddr *) &socket_address, sizeof(socket_address)) < 0)
 	{
 		cerr << "Error: Bind: Address already used - " << errno << endl;
@@ -43,64 +57,47 @@ int main(void)
 
 		bool keep_alive = true;
 	
+		/* On applique un timeout pour accélérer le chargement des images */
+		struct timeval timeout;
+		timeout.tv_sec = 1;
+		timeout.tv_usec = 0;
+		setsockopt(connected_socket_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+		
 		while (keep_alive)
 		{
-
-			string      request;
-			char        buffer[BUFFER_SIZE];
-			int         receivedBytes;
-	
-			/* Utilisation de select pour éviter le timeout du serveur */
-			fd_set read_fds;
-			struct timeval timeout;
+			string request;
+			char buffer[BUFFER_SIZE];
 			bool headers_complete = false;
 
-			while (!headers_complete)
+			/* Lire les données jusqu'à avoir les headers complets */
+			while (!headers_complete && keep_alive)
 			{
-				FD_ZERO(&read_fds);
-				FD_SET(connected_socket_fd, &read_fds);
-				timeout.tv_sec = 5;
-				timeout.tv_usec = 0;
-				
-				int select_result = select(connected_socket_fd + 1, &read_fds, NULL, NULL, &timeout);
-				
-				if (select_result == 0) {
-					cout << "Timeout - pas de données reçues" << endl;
-					keep_alive = false;
-					break;
-				} else if (select_result < 0) {
-					cerr << "Erreur select: " << errno << endl;
-					keep_alive = false;
-					break;
-				}
-				
-				if (FD_ISSET(connected_socket_fd, &read_fds)) {
-					receivedBytes = recv(connected_socket_fd, buffer, sizeof(buffer) - 1, MSG_DONTWAIT);
-					if (receivedBytes <= 0) {
-						if (receivedBytes == 0) {
-							cout << "Client closed connection" << endl;
-						} else {
-							cerr << "Error: message not received - " << errno << endl;
-						}
-						keep_alive = false;
-						break;
-					}
-					buffer[receivedBytes] = '\0';
-					request.append(buffer);
-					fill(buffer, buffer + sizeof(buffer), '\0');
+				int receivedBytes = recv(connected_socket_fd, buffer, sizeof(buffer) - 1, 0);
 
-					if (request.find("\r\n\r\n") != string::npos) {
-						headers_complete = true;
+				if (receivedBytes <= 0) {
+					if (receivedBytes == 0) {
+						cout << "Client closed connection" << endl;
+					} else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+						cout << "Error: Timeout - no data received" << endl;
+					} else {
+						cerr << "Error: message not received - " << errno << endl;
 					}
+					keep_alive = false;
+					break;
 				}
+				
+				buffer[receivedBytes] = '\0';
+				request.append(buffer, receivedBytes);
+
+				if (request.find("\r\n\r\n") != string::npos)
+					headers_complete = true;
 			}
 			
 			if (!keep_alive || request.empty()) {
 				break;
 			}
-				
-			cout << "\nClient request:\n" << request << endl;
-
+			
+			string first_line = request.substr(0, request.find('\r'));
 			c_request my_request(request);
 
 			try {
@@ -109,9 +106,10 @@ int main(void)
 					keep_alive = false;
 					cout << "Client requested connection close" << endl;
 				}
-			} catch (...) {
-
+			} catch (const std::exception &e) {
+				cerr << "Exception caught: " << e.what() << endl;
 			}
+			
 			response_handler.define_response_content(my_request);
 
 			const string &response = response_handler.get_response();

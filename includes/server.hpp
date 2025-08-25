@@ -16,7 +16,7 @@
 
 /*-----------  DEFINE -----------*/
 
-#define	BUFFER_SIZE 4096
+#define	BUFFER_SIZE 8192
 using	namespace std;
 
 string int_to_string(int n);
