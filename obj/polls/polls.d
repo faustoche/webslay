@@ -1,15 +1,15 @@
-obj/request/request.o: srcs/request/request.cpp srcs/request/request.hpp \
-  includes/server.hpp srcs/response/response.hpp \
-  srcs/clients/clients.hpp srcs/server_config/location.hpp \
+obj/polls/polls.o: srcs/polls/polls.cpp includes/server.hpp \
+  srcs/response/response.hpp srcs/clients/clients.hpp \
+  srcs/request/request.hpp srcs/server_config/location.hpp \
   srcs/server_config/lexer.hpp includes/colors.hpp
-
-srcs/request/request.hpp:
 
 includes/server.hpp:
 
 srcs/response/response.hpp:
 
 srcs/clients/clients.hpp:
+
+srcs/request/request.hpp:
 
 srcs/server_config/location.hpp:
 

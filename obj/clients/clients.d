@@ -1,15 +1,15 @@
-obj/request/request.o: srcs/request/request.cpp srcs/request/request.hpp \
+obj/clients/clients.o: srcs/clients/clients.cpp srcs/clients/clients.hpp \
   includes/server.hpp srcs/response/response.hpp \
-  srcs/clients/clients.hpp srcs/server_config/location.hpp \
+  srcs/request/request.hpp srcs/server_config/location.hpp \
   srcs/server_config/lexer.hpp includes/colors.hpp
 
-srcs/request/request.hpp:
+srcs/clients/clients.hpp:
 
 includes/server.hpp:
 
 srcs/response/response.hpp:
 
-srcs/clients/clients.hpp:
+srcs/request/request.hpp:
 
 srcs/server_config/location.hpp:
 
