@@ -64,11 +64,7 @@ void c_server::handle_poll_events()
 		return ;
 	}
 	if (num_events == 0) // aucun evenement donc rien ne se passe
-	{
 		return ;
-		// gestion des timeouts client
-	}
-
 	/**** BOUCLE À TRAVERS LES POLLS QUI ONT DÉCLENCHÉ DES ÉVÉNEMENTS *****/
 	for (size_t i = 0; i < _poll_fds.size(); i++) // on boucle a travers tous les fd pour le reste
 	{
@@ -79,11 +75,10 @@ void c_server::handle_poll_events()
 		// SI C'est le serveur et qu'il y a une nouvelle connexion
 		if (i == 0)
 		{
-			if (pfd.revents && POLLIN)
+			if (pfd.revents & POLLIN)
 			{
 				// on appelle cette fonction pour accéder les clients en attente
 				handle_new_connection();
-				return ;
 			}
 			if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
 			{
@@ -135,11 +130,9 @@ void	c_server::handle_client_read(int client_fd)
 {
 	c_client *client = find_client(client_fd);
 	if (client == NULL)
-	{
 		return ; // on ne retrouve pas le client
-	}
-	char buffer[BUFFER_SIZE];
-	int bytes_received = recv(client_fd, buffer, BUFFER_SIZE - 1, 0);
+	char buffer[1024];
+	int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 	if (bytes_received <= 0)
 	{
 		if (bytes_received == 0) // le client a fermé la connexion
