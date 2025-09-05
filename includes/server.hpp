@@ -37,12 +37,12 @@ private:
 	map<int, c_client>		_clients;
 	vector<struct pollfd>	_poll_fds;
 
-	    // CONFIGURATION FILE
-    // int                                 _ip;
-    // int                                 _port;
+	// CONFIGURATION FILE (completer)
+    string								_ip; // reflechir si pas de directive listen -> valeur par defaut ?
+    uint16_t                            _port; // dans RFC entier non signe de 16 bits + pas de negatif
     // int                                 _root; // root propre au serveur a definir en dur
     string                              _index; // recuperation du premier fichier valide dans le parsing (possible plusieurs fichiers) 
-    std::map<std::string, c_location>   _location_map;
+    map<string, c_location>   			_location_map;
 	
 public:
 	const int &get_socket_fd() const { return (_socket_fd); }
@@ -61,15 +61,20 @@ public:
 	void		handle_client_write(int client_fd);
 	void		process_client_request(int client_fd);
 
-	    // CONFIGURATION FILE
+	// CONFIGURATION FILE
     // Setters
-    void                set_index_file(string const & index);
-    void                set_location(string const & path, c_location const & loc);
+    void                	set_index_file(string const & index);
+	void					set_port(uint16_t const & port);
+	void					set_ip(string const & ip);
+    void                	add_location(string const & path, c_location const & loc);
     // Getters
-    string const &      get_index_file() const;
+    string const &      			get_index_file() const { return (_index); };
+	string const &					get_ip_adress() const {return (_ip); };
+	uint16_t const &				get_port() const {return (_port); };
+	map<string, c_location> const &	get_location() const {return (_location_map); };
 
     // Debug
-    void    print_config() const;
+    void    				print_config() const;
 };
 
 /************ FUNCTIONS ************/

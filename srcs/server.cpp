@@ -10,7 +10,17 @@ void	c_server::set_index_file(string const & index)
 	this->_index = index;
 }
 
-void	c_server::set_location(string const & path, c_location const & loc)
+void	c_server::set_port(uint16_t const & port)
+{
+	this->_port = port;
+}
+
+void	c_server::set_ip(string const & ip)
+{
+	this->_ip = ip;
+}
+
+void	c_server::add_location(string const & path, c_location const & loc)
 {
 	if (path.empty())
 		throw invalid_argument("Path for location is empty");
@@ -21,14 +31,22 @@ void	c_server::set_location(string const & path, c_location const & loc)
 
 /*-------------------------   setters   -----------------------------*/
 
-string const &	c_server::get_index_file() const
-{
-	return this->_index;
-}
+
 
 
 /*-------------------------   debug   -----------------------------*/
 void	c_server::print_config() const
 {
-	cout << "Index file configuration: " << this->_index << endl;
+	cout << "Index file: " << get_index_file() << endl
+			<< "IP adress: " << get_ip_adress() << endl
+			<< "Port: " << get_port() << endl;
+
+	map<string, c_location>::const_iterator it;
+
+	for (it = get_location().begin(); it != get_location().end(); it++)
+	{
+		it->second.print_location();
+	}
+			
+
 }

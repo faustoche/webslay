@@ -87,7 +87,7 @@ int main(void)
 
 	while (true)
 	{
-		cout << "Waiting for connections..." << endl;
+		//cout << "Waiting for connections..." << endl;
 		server.setup_pollfd();
 		server.handle_poll_events();
 		// socklen_t addrlen = sizeof(socket_address);
